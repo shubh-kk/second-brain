@@ -1,6 +1,3 @@
-GitHub Copilot: Sure, here's a detailed README.md for your project:
-
-
 # Second Brain Application Backend
 
 ## Description
