@@ -12,8 +12,13 @@ const contentTypes = ['image', 'video', 'article', 'audio'];
 const ContentSchema = new Schema({
     title: String,
     link: String,
-    type: {type: String, enum: contentTypes},
-    tags: [{ type: ObjectId, ref: 'Tag' }],
+    type: { type: String, enum: contentTypes },
+    tags: [{
+        title: {
+            type: String,
+            required: true
+        }
+    }],
     userId: { type: ObjectId, ref: 'User', required: true }
 })
 
