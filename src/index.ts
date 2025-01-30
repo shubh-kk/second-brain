@@ -2,7 +2,7 @@ import express, { Request, Response, Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt, { hash } from "bcrypt"
 import zod, { string } from "zod";
-import { Content, Link, Tag, User } from "./db";
+import { Content, Link, User } from "./db";
 import { JWT_SECRET } from "./config";
 import userMiddleware from "./middleware";
 import { random } from "./utils";
@@ -105,17 +105,20 @@ const contentBody = zod.object({
     link: zod.string(),
     type: zod.string(),
     tags: zod.array(
-        zod.string()
-    )
+        zod.object({
+            title: zod.string()
+        })
+    ).optional()
 });
 //add content
-//@ts-ignore
+// @ts-ignore
 router.post("/content", userMiddleware, async (req, res): Promise<any> => {
     const payload = contentBody.safeParse(req.body);
 
     if (!payload.success) {
-        return res.status(411).json({
-            msg: "Invalid Inputs"
+        return res.status(400).json({
+            msg: "Invalid Inputs",
+            errors: payload.error.errors 
         })
     } else {
         try {
@@ -125,15 +128,15 @@ router.post("/content", userMiddleware, async (req, res): Promise<any> => {
                 link: payload.data.link,
                 type: payload.data.type,
                 userId: req.userId,
-                tags: []
+                tags:  payload.data.tags ?? []
             })
 
             return res.status(201).json({
                 msg: "Content Added"
             })
         } catch (error) {
-            res.json({
-                msg: "Error occured while createing content"
+            return res.json({
+                msg: "Error occured while creating content"
             })
         }
     }
@@ -190,6 +193,7 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
     const userId = req.userId;
     const payload = linkBody.safeParse(req.body) ;
 
+    //incorrect inputs
     if (!payload.success) {
         return res.status(411).json({
             msg: "Incorrect inputs"
@@ -197,6 +201,7 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
     }
 
     try {
+        //if the share true
         if (payload.data.share) {
             const existingLink = await Link.findOne({
                 userId
@@ -208,7 +213,7 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
                 })
             }
 
-            const hash = random(10);
+            const hash = random(10); //creates random string of len 10
             await Link.create({
                 hash,
                 userId
@@ -217,7 +222,8 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
             return res.json({
                 link: hash
             })
-        } else {
+        } else {  //if the share is false
+            //TODO: has to check if link already there then only remove
             await Link.deleteOne({
                 userId
             })
@@ -235,7 +241,7 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
 
 //get anothers content link
 //@ts-ignore
-router.get("/brain/:shareLink",async (req, res) => {
+router.get("/brain/:shareLink", async (req, res) => {
     const hash = req.params.shareLink ;
 
     try {
@@ -272,6 +278,7 @@ router.get("/brain/:shareLink",async (req, res) => {
             error
         })
     }
+    
 })
 
 app.listen(3000, () => {

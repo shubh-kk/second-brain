@@ -32,12 +32,8 @@ const LinkSchema = new Schema({
     }
 })
 
-const TagSchema = new Schema({
-    title: { type: String, unique: true, required: true}
-})
 
 export const User = model("User", UserSchema)
 export const Content = model('Content', ContentSchema)
 export const Link = model('Link',LinkSchema) ;
-export const Tag = model('Tag', TagSchema)
 
