@@ -13,8 +13,8 @@ const userMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
     try {
         // Verify the JWT token
-        const decoded = jwt.verify(headers , JWT_SECRET) as JwtPayload ;
-        if (typeof decoded === "string") {
+        const decoded = jwt.verify(headers , JWT_SECRET) as JwtPayload ; //token has to be of object type(encoded) not a string
+        if (typeof decoded === "string") { 
             res.status(403).json({
                 message: "You are not logged in"
             })
