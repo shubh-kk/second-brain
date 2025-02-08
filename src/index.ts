@@ -6,14 +6,20 @@ import { Content, Link, User } from "./db";
 import { JWT_SECRET } from "./config";
 import userMiddleware from "./middleware";
 import { random } from "./utils";
+import cors from "cors";
 
 const router: Router = Router();
 const app: express.Application = express();
+
 app.use(express.json())
+// CORS configuration - must be before any routes
+app.use(cors({
+    origin: "http://localhost:5173"
+}));
 app.use("/api/v1", router);
 
-const saltRounds = 5;
 
+const saltRounds = 5;
 const signupBody = zod.object({
     username: zod.string().min(3),
     password: zod.string().min(6)
@@ -47,7 +53,7 @@ router.post("/signup", async (req: Request, res: Response): Promise<any> => {
             });
         } catch (error) {
             return res.status(500).json({
-                msg: "Errror while Creatng User"
+                msg: "Error while Creating User"
             });
         }
     }
@@ -110,7 +116,7 @@ const contentBody = zod.object({
         })
     ).optional()
 });
-//add content
+//add/create content
 // @ts-ignore
 router.post("/content", userMiddleware, async (req, res): Promise<any> => {
     const payload = contentBody.safeParse(req.body);
@@ -119,28 +125,30 @@ router.post("/content", userMiddleware, async (req, res): Promise<any> => {
         return res.status(400).json({
             msg: "Invalid Inputs",
             errors: payload.error.errors 
-        })
-    } else {
-        try {
-             
-            await Content.create({
-                title: payload.data.title,
-                link: payload.data.link,
-                type: payload.data.type,
-                userId: req.userId,
-                tags:  payload.data.tags ?? []
-            })
+        });
+    }
 
-            return res.status(201).json({
-                msg: "Content Added"
-            })
-        } catch (error) {
-            return res.json({
-                msg: "Error occured while creating content"
-            })
-        }
+    try {
+        const content = await Content.create({
+            title: payload.data.title,
+            link: payload.data.link,
+            type: payload.data.type,
+            userId: req.userId,
+            tags: payload.data.tags ?? []
+        });
+
+        return res.status(201).json({
+            msg: "Content Added Successfully",
+            content
+        });
+    } catch (error) {
+        console.error("Content creation error:", error); // Add logging
+        return res.status(500).json({
+            msg: "Error occurred while creating content"
+        });
     }
 })
+//get content
 //@ts-ignore
 router.get("/content", userMiddleware, async (req, res) => {
     const userId = req.userId ;
@@ -159,6 +167,7 @@ router.get("/content", userMiddleware, async (req, res) => {
         })
     }
 })
+//delete content
 //@ts-ignore
 router.delete("/content", userMiddleware, async (req, res) => {
 
@@ -280,7 +289,7 @@ router.get("/brain/:shareLink", async (req, res) => {
     }
     
 })
-
-app.listen(3000, () => {
-    console.log("Server is listening");
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
 })

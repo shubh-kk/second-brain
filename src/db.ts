@@ -8,11 +8,10 @@ const UserSchema = new Schema({
     password: { type: String, required: true }
 })
                                          
-const contentTypes = ['image', 'video', 'article', 'audio'];
 const ContentSchema = new Schema({
     title: String,
     link: String,
-    type: { type: String, enum: contentTypes },
+    type: { type: String },
     tags: [{
         title: {
             type: String,
