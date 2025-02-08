@@ -1,9 +1,12 @@
 # Second Brain Application Backend
 
 ## Description
-- This project about second brain where user can store online links at a single place, and access it anywhere using internet connection.
+ This project about second brain where user can store online links at a single place, and access it anywhere using internet connection.
+
+## Tech Used
+- **Express, MongoDB**
 - built with TypeScript and managed using npm. 
-- dependencies: zod, bcrypt, jsonwebtoken, cors
+- dependencies: zod, bcrypt, jsonwebtoken, cors, mongoose
 
 
 ## Table of Contents
