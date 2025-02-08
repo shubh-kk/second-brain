@@ -107,7 +107,7 @@ router.post("/login", async (req: Request, res: Response): Promise<any> => {
 
 
 const contentBody = zod.object({
-    title: zod.string() ,
+    title: zod.string(),
     link: zod.string(),
     type: zod.string(),
     tags: zod.array(
@@ -117,15 +117,15 @@ const contentBody = zod.object({
     ).optional()
 });
 //add/create content
-// @ts-ignore
 router.post("/content", userMiddleware, async (req, res): Promise<any> => {
     const payload = contentBody.safeParse(req.body);
 
     if (!payload.success) {
-        return res.status(400).json({
+        res.status(400).json({
             msg: "Invalid Inputs",
-            errors: payload.error.errors 
+            errors: payload.error.errors
         });
+        return;
     }
 
     try {
@@ -149,18 +149,18 @@ router.post("/content", userMiddleware, async (req, res): Promise<any> => {
     }
 })
 //get content
-//@ts-ignore
-router.get("/content", userMiddleware, async (req, res) => {
-    const userId = req.userId ;
+router.get("/content", userMiddleware, async (req, res): Promise<void> => {
+    const userId = req.userId;
 
     try {
         const content = await Content.find({
             userId: userId
-        }).populate("userId","username")
-    
-        return res.json({
+        }).populate("userId", "username")
+
+        res.json({
             content
         })
+        return;
     } catch (error) {
         res.status(411).json({
             msg: "Error Occurred"
@@ -168,8 +168,7 @@ router.get("/content", userMiddleware, async (req, res) => {
     }
 })
 //delete content
-//@ts-ignore
-router.delete("/content", userMiddleware, async (req, res) => {
+router.delete("/content", userMiddleware, async (req, res): Promise<void> => {
 
     try {
         const deleted = await Content.deleteOne({
@@ -178,13 +177,15 @@ router.delete("/content", userMiddleware, async (req, res) => {
         })
 
         if (deleted.deletedCount > 0) {
-            return res.json({
+            res.json({
                 msg: "Content Deleted"
             })
+            return;
         } else {
-            return res.status(411).json({
+            res.status(411).json({
                 msg: "No Content Present/Already Deleted"
             })
+            return;
         }
     } catch (error) {
         res.status(403).json({
@@ -197,16 +198,16 @@ const linkBody = zod.object({
     share: zod.boolean()
 })
 //create and remove shareable link
-//@ts-ignore
-router.post("/brain/share", userMiddleware, async (req, res) => {
+router.post("/brain/share", userMiddleware, async (req, res): Promise<void> => {
     const userId = req.userId;
-    const payload = linkBody.safeParse(req.body) ;
+    const payload = linkBody.safeParse(req.body);
 
     //incorrect inputs
     if (!payload.success) {
-        return res.status(411).json({
+        res.status(411).json({
             msg: "Incorrect inputs"
         })
+        return;
     }
 
     try {
@@ -217,9 +218,10 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
             })
 
             if (existingLink) {
-                return res.json({
+                res.json({
                     link: existingLink.hash
                 })
+                return;
             }
 
             const hash = random(10); //creates random string of len 10
@@ -228,17 +230,19 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
                 userId
             })
 
-            return res.json({
+            res.json({
                 link: hash
             })
+            return;
         } else {  //if the share is false
             //TODO: has to check if link already there then only remove
             await Link.deleteOne({
                 userId
             })
-            return res.json({
+            res.json({
                 msg: "Link removed"
             })
+            return;
         }
     } catch (error) {
         res.status(411).json({
@@ -249,18 +253,18 @@ router.post("/brain/share", userMiddleware, async (req, res) => {
 })
 
 //get anothers content link
-//@ts-ignore
-router.get("/brain/:shareLink", async (req, res) => {
-    const hash = req.params.shareLink ;
+router.get("/brain/:shareLink", async (req, res): Promise<void> => {
+    const hash = req.params.shareLink;
 
     try {
         const link = await Link.findOne({
             hash
         })
         if (!link) {
-            return res.status(411).json({
+            res.status(411).json({
                 message: "shared link is invalid or sharing is disabled"
             })
+            return;
         }
         const content = await Content.find({
             userId: link.userId
@@ -276,7 +280,7 @@ router.get("/brain/:shareLink", async (req, res) => {
             })
             return;
         }
-    
+
         res.json({
             username: user.username,
             content: content
@@ -287,8 +291,25 @@ router.get("/brain/:shareLink", async (req, res) => {
             error
         })
     }
-    
+
 })
+
+// Add this new endpoint to verify token
+router.get("/me", userMiddleware, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const user = await User.findById(req.userId).select('-password');
+        if (!user) {
+            res.status(404).json({ msg: "User not found" });
+            return;
+        }
+        res.json({ user });
+        return;
+    } catch (error) {
+        res.status(500).json({ msg: "Error verifying authentication" });
+        return;
+    }
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);
